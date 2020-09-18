@@ -1,10 +1,12 @@
 import numpy as np
 from psychopy import core
 import random
+import pylink
 
+from psychopy import visual, core
 
 def createPatches(experimentStructure, stimuliStructure, patchClock, targetPatch,
-trials, whichLoop, thisDifference, contrast, routineTimer, globalClock, tracker):
+trials, whichLoop, thisDifference, contrast, routineTimer, globalClock, eyeTracker=0, meanOpacity = 0.5):
     """ This function creates the Gabor-patches
     
     Input:
@@ -18,39 +20,48 @@ trials, whichLoop, thisDifference, contrast, routineTimer, globalClock, tracker)
         contrast: presented contrast difference (from xls block files)
         routineTimer: timer to control presentation times
         globalClock: clock to control timing during fMRI
-        tracker: eye-tracker object instance
+        eyeTracker: eye-tracker object instance
+        meanOpacity: default opacity of both patches
         
     Return:
         decision1: decision1 object instance
         trials: trial handler Psychopy object instance
         routineTimer: timer to control presentation times
         globalClock: clock to control timing during fMRI
-        decision1.timestamp: indicates decision2 onset
+        decision1.timestamp: indicates decision1 onset
         fixCrossTiming: actual presentation time of fixation cross during patches phase
         saccadeMiss: Indicates if participant did not properly fixate stimulus (if eye-tracker is used)
     """
 
     # Create some shortnames
-    expInfo         = experimentStructure['expInfo']
-    cBal            = expInfo['cBal']
-    globalClock     = experimentStructure['globalClock']
-    NOT_STARTED     = experimentStructure['NOT_STARTED']
-    STARTED         = experimentStructure['STARTED']
-    FINISHED        = experimentStructure['FINISHED']
-    STOPPED         = experimentStructure['STOPPED']
-    event           = experimentStructure['event']
-    whichVersion    = experimentStructure['whichVersion']
-    patch1          = stimuliStructure['patch1']
-    patch2          = stimuliStructure['patch2']
-    endExpNow       = experimentStructure['endExpNow']
-    event           = experimentStructure['event']
-    win             = experimentStructure['win']
-    useEyeTracker   = experimentStructure['useEyeTracker']
-    fixationCross   = stimuliStructure['fixationCross']
-    fixCrossTiming  = stimuliStructure['fixCrossTiming']
-    jitter          = stimuliStructure['jitter']
-    stimulusTiming  = stimuliStructure['stimulusTiming']
+    expInfo = experimentStructure['expInfo']
+    cBal = expInfo['cBal']
+    session = expInfo['session']
+    globalClock = experimentStructure['globalClock']
+    NOT_STARTED = experimentStructure['NOT_STARTED']
+    STARTED = experimentStructure['STARTED']
+    FINISHED = experimentStructure['FINISHED']
+    STOPPED = experimentStructure['STOPPED']
+    event = experimentStructure['event']
+    whichVersion = experimentStructure['whichVersion']
+    scr_wdt = experimentStructure['scr_wdt'] 
+    scr_hght = experimentStructure['scr_hght'] 
+    patch1 = stimuliStructure['patch1']
+    patch2 = stimuliStructure['patch2']
+    endExpNow = experimentStructure['endExpNow']
+    event = experimentStructure['event']
+    win = experimentStructure['win']
+    useEyeTracker = experimentStructure['useEyeTracker']
+    fixationCross = stimuliStructure['fixationCross']
+    fixCrossTiming = stimuliStructure['fixCrossTiming']
+    jitter = stimuliStructure['jitter']
+    stimulusTiming = stimuliStructure['stimulusTiming']
+    crit_win = experimentStructure['crit_win']
+    et_dummy = experimentStructure['et_dummy']
     
+    # Create variable for buttons of button box used in fMRI experiment
+    leftButton = '2'
+    rightButton = '4'
 
     #------Prepare to start Routine "trial"-------
     t = 0
@@ -64,41 +75,41 @@ trials, whichLoop, thisDifference, contrast, routineTimer, globalClock, tracker)
     # Routine timer for presentation timing
     routineTimer.add(fixCrossTiming + stimulusTiming)
     
-    # Set mean opacity of patches
-    meanOpacity = 0.5
-    
+    # In the previous GB experiment "pos" was set to 6
+    # Here it is adjusted for fMRI to present patches closer to the fixation cross
     contrast = float(contrast)
+    pos = 3.5  # absolute position of pachtes
     if cBal == '1':
         if targetPatch == 'left':
-            patch1.setPos([-6,0])
-            patch2.setPos([6,0])
+            patch1.setPos([-pos,0])
+            patch2.setPos([pos,0])
         elif targetPatch == 'right':
-            patch1.setPos([6,0])
-            patch2.setPos([-6,0])
+            patch1.setPos([pos,0])
+            patch2.setPos([-pos,0])
     elif cBal == '2':
         if targetPatch == 'left':
-            patch1.setPos([6,0])
-            patch2.setPos([-6,0])
+            patch1.setPos([pos,0])
+            patch2.setPos([-pos,0])
         elif targetPatch == 'right':
-            patch1.setPos([-6,0])
-            patch2.setPos([6,0])
+            patch1.setPos([-pos,0])
+            patch2.setPos([pos,0])
             
     # Get correct keys 
-    if whichVersion == 1:
-        targetPatchKey   = targetPatch
+    if whichVersion == 1 or (whichVersion == 2 and session == 1):
+        targetPatchKey = targetPatch
     elif whichVersion == 2:
         if targetPatch == 'left':
-            targetPatchKey = '3'
+            targetPatchKey = leftButton 
         elif targetPatch == 'right':
-            targetPatchKey = '1'
+            targetPatchKey = rightButton
             
     # Compute delta contrast and state
     if targetPatch == 'left':
         deltaContrast = contrast*-1
-        state         = 0
+        state = 0
     elif targetPatch == 'right':
         deltaContrast = contrast
-        state         = 1
+        state = 1
     
     # Set opacity of patches
     opacityPatch1 = (meanOpacity + contrast/2)
@@ -106,7 +117,13 @@ trials, whichLoop, thisDifference, contrast, routineTimer, globalClock, tracker)
     patch1.setOpacity(opacityPatch1)
     patch2.setOpacity(opacityPatch2)
     
-    decision1 = event.BuilderKeyResponse()  # create an object of type KeyResponse
+    # For fMRI test session, choose random orientations
+    if session == 4:
+        patch1.setOri(random.uniform(0,360))
+        patch2.setOri(random.uniform(0,360))
+    
+    # Create an object of type KeyResponse
+    decision1 = event.BuilderKeyResponse()  
     decision1.status = NOT_STARTED
     
     # Keep track of which components have finished
@@ -119,28 +136,28 @@ trials, whichLoop, thisDifference, contrast, routineTimer, globalClock, tracker)
         if hasattr(thisComponent, 'status'):
             thisComponent.status = NOT_STARTED
             
+        
 #-------Start Routine "trial"-------
 
-    decision1.timestamp = globalClock.getTime()
+    # Send timestamp that trial has started
+    decision1.ts_start = globalClock.getTime()
     
-    ## pygaze stuff
-    if useEyeTracker:
-        tracker.start_recording()
-
-    # drift correction (needed?)
-    # keyboard = libinput.Keyboard(keylist=['space'], timeout=None)
-
+    # Indicate if patch onset trigger has been recorded
+    triggered = False 
+    
+    # Initialize variables that indicates saccade miss
     saccadeMiss = 0
+    
+    # Initialize variables that indicates when trial does not continue
     continueRoutine = True
+    
+    # Eye tracking sample storage (to check for consecutive samples outside of allowed area)
+    n_samples = 50 # how many consecutive samples outside of allowed area are needed to trigger a saccadeMiss?
+    samples_x = np.array([]) # initialize storage for gazePositions (x coordinates)
+    samples_y = np.array([]) # and y coordinates
+    
     while continueRoutine and routineTimer.getTime() > 0:
-        
-        if useEyeTracker:
-            onesample = tracker.sample()
-            
-        if useEyeTracker:
-            if (onesample[0] > 1330 or onesample[0] < 1230)  and (onesample[1] > 770 or onesample[1] < 670):
-                saccadeMiss = 1
-        
+                
         # Get current time
         t = patchClock.getTime()
         frameN = frameN + 1  # number of completed frames (so 0 is the first frame)
@@ -152,6 +169,11 @@ trials, whichLoop, thisDifference, contrast, routineTimer, globalClock, tracker)
             patch1.tStart = t  # underestimates by a little under one frame
             patch1.frameNStart = frameN  # exact frame index
             patch1.setAutoDraw(True)
+            
+            if useEyeTracker:
+                # Send ET message
+                eyeTracker.sendMessage('PATCHES ON')
+                
         if patch1.status == STARTED and t >= (fixCrossTiming + (stimulusTiming - win.monitorFramePeriod*0.75)): #most of one frame period left
             patch1.setAutoDraw(False)
         
@@ -170,9 +192,12 @@ trials, whichLoop, thisDifference, contrast, routineTimer, globalClock, tracker)
             fixationCross.tStart = t  # underestimates by a little under one frame
             fixationCross.frameNStart = frameN  # exact frame index
             fixationCross.setAutoDraw(True)
+            if useEyeTracker:
+                # Send ET message
+                eyeTracker.sendMessage('PATCHES PHASE ON')
         if fixationCross.status == STARTED and t >= (0.0 + (fixCrossTiming + stimulusTiming - win.monitorFramePeriod*0.75)): #most of one frame period left
             fixationCross.setAutoDraw(False)
-        
+            
         # *decision1* updates
         if t >= fixCrossTiming and decision1.status == NOT_STARTED:
             # keep track of start time/frame for later
@@ -186,26 +211,36 @@ trials, whichLoop, thisDifference, contrast, routineTimer, globalClock, tracker)
         if decision1.status == STARTED and t >= (fixCrossTiming + (stimulusTiming - win.monitorFramePeriod*0.75)): #most of one frame period left
             decision1.status = STOPPED
         if decision1.status == STARTED:
-            if whichVersion == 1:
+            if whichVersion == 1 or (whichVersion == 2 and session == 1):
                 theseKeys = event.getKeys(keyList=['left', 'right'])
             elif whichVersion == 2:
-                theseKeys = event.getKeys(keyList=['3', '1'])
-                
+                theseKeys = event.getKeys(keyList=[leftButton, rightButton])
+            
             # Check for quit:
             if "escape" in theseKeys:
                 endExpNow = True
+                
+                # Todo: ueberlegen, ob wir das logggen moechten!
+                if useEyeTracker:
+                    eyeTracker.sendMessage("Quit")
+                    
             if len(theseKeys) > 0:  # at least one key was pressed
                 decision1.keys = theseKeys[-1]  # just the last key pressed
                 decision1.rt = decision1.clock.getTime()
                 
                 # Was this 'correct'?
+                # Todo: hier dann decision1.decision aufzeichnen und unten hinzufugen.
                 if (decision1.keys == str(targetPatchKey)) or (decision1.keys == targetPatchKey):
                     decision1.corr = 1
                 else:
                     decision1.corr = 0
                 
-                # In current version (07/16) no reward for perceptual decision
+                # In current version no reward for perceptual decision
                 decision1.reward = 0
+                
+                # Log response
+                if useEyeTracker:
+                    eyeTracker.sendMessage("PATCHES RESPONSE %s"%(decision1.keys))
                 
         for thisComponent in trialComponents:
             if hasattr(thisComponent, "status") and thisComponent.status != FINISHED:
@@ -220,21 +255,30 @@ trials, whichLoop, thisDifference, contrast, routineTimer, globalClock, tracker)
         
         # Refresh the screen
         if continueRoutine:  # don't flip if this routine is over or we'll get a blank screen
+            
+            # Send patch onset trigger
+            if t >= fixCrossTiming and triggered == False:
+                decision1.ts_patch = globalClock.getTime() # send trigger
+                triggered = True # indicate that patch trigger has been recorded
+            
+            # Refresh the screen
             win.flip()
             
     # Stop eye tracking
     if useEyeTracker:
-        tracker.stop_recording()
-        #log.write([trialnr, trialtype,endpos, t1-t0, correct])
+        
+        # Send a message to mark the end of trial
+        eyeTracker.sendMessage('PATCHES PHASE OFF')
 
     #-------Ending Routine "trial"-------
     for thisComponent in trialComponents:
         if hasattr(thisComponent, "setAutoDraw"):
             thisComponent.setAutoDraw(False)
+    
     # Check responses
     if decision1.keys in ['', [], None]:  # No response was made
        decision1.keys = None
-       decision1.corr = 0 # sonst zeigt der bei miss keinen kumulierten wert float('nan')  # failed to respond (incorrectly)
+       decision1.corr = 0  # failed to respond (incorrectly)
        decision1.reward = 0  # failed to respond (incorrectly)
     
     # Store data for trials (TrialHandler)
@@ -247,13 +291,22 @@ trials, whichLoop, thisDifference, contrast, routineTimer, globalClock, tracker)
         trials.addData('opacityPatch2', opacityPatch2)
         trials.addData('meanOpacity', meanOpacity)
         trials.addData('decision1.keys',decision1.keys)
-        if decision1.keys == 'left':
-            decision1.decision = 0
-            trials.addData('decision1.decision',0)
-        elif decision1.keys == 'right':
-            trials.addData('decision1.decision',1)
-        elif decision1.keys == None:
-            trials.addData('decision1.decision',float('nan'))
+        if whichVersion == 1 or (whichVersion == 2 and session == 1):
+            if decision1.keys == 'left':
+                decision1.decision = 0
+                trials.addData('decision1.decision', 0)
+            elif decision1.keys == 'right':
+                trials.addData('decision1.decision', 1)
+            elif decision1.keys == None:
+                trials.addData('decision1.decision',float('nan'))
+        else:
+            if decision1.keys == leftButton:
+                decision1.decision = 0
+                trials.addData('decision1.decision', 0)
+            elif decision1.keys == rightButton:
+                trials.addData('decision1.decision', 1)
+            elif decision1.keys == None:
+                trials.addData('decision1.decision',float('nan'))
         trials.addData('decision1.corr', decision1.corr)
         trials.addData('decision1.reward', decision1.reward)
         accPerf = trials.data['decision1.reward'].sum()
@@ -264,4 +317,4 @@ trials, whichLoop, thisDifference, contrast, routineTimer, globalClock, tracker)
         # store data for stairs (currently not used)
         #trials.addResponse(decision1.corr)
     
-    return(decision1, trials, routineTimer, globalClock, decision1.timestamp, fixCrossTiming, saccadeMiss)
+    return(decision1, trials, routineTimer, globalClock, decision1.ts_start, fixCrossTiming, saccadeMiss)

@@ -2,9 +2,10 @@ from numpy.random import random
 import random
 from psychopy import core
 from giveFeedback import giveFeedback
+import pylink
 
 def createFractals(experimentStructure, outcomeStructure, stimuliStructure, redFractal, targetPatch, corrAns,
-trials, outcomes, feedbackText, misses, missCounter, myCount, routineTimer, globalClock, nTrials):
+trials, outcomes, feedbackText, misses, missCounter, myCount, routineTimer, globalClock, nTrials, accPerf, eyeTracker=0):
     """ This function creates the fractals
     
     Input: 
@@ -23,11 +24,14 @@ trials, outcomes, feedbackText, misses, missCounter, myCount, routineTimer, glob
         routineTimer: timer to control presentation times
         globalClock: clock to control timing during fMRI
         nTrials: number of trials
+        accPerf: Accumulated performance
+        eyeTracker: eye-tracker object instance
     
     Return:
         decision2: decision2 object instance
         trials: trial handler Psychopy object instance
         misses: temporarily saves information about trials that have been missed to repeat these trials
+        accPerf: Accumulated performance
         missCounter: counter for number of misses
         routineTimer: timer to control presentation times
         globalClock: clock to control timing during fMRI
@@ -39,68 +43,77 @@ trials, outcomes, feedbackText, misses, missCounter, myCount, routineTimer, glob
     """
     
     # Create some shortnames
-    NOT_STARTED     = experimentStructure['NOT_STARTED']
-    STARTED         = experimentStructure['STARTED']
-    FINISHED        = experimentStructure['FINISHED']
-    STOPPED         = experimentStructure['STOPPED']
-    endExpNow       = experimentStructure['endExpNow']
-    event           = experimentStructure['event']
-    win             = experimentStructure['win']
-    whichVersion    = experimentStructure['whichVersion']
-    winFeedback     = outcomeStructure['winFeedback']
+    expInfo = experimentStructure['expInfo']
+    session = expInfo['session']
+    NOT_STARTED = experimentStructure['NOT_STARTED']
+    STARTED = experimentStructure['STARTED']
+    FINISHED = experimentStructure['FINISHED']
+    STOPPED = experimentStructure['STOPPED']
+    endExpNow = experimentStructure['endExpNow']
+    event = experimentStructure['event']
+    win = experimentStructure['win']
+    whichVersion = experimentStructure['whichVersion']
+    useEyeTracker = experimentStructure['useEyeTracker']
+    winFeedback = outcomeStructure['winFeedback']
     neutralFeedback = outcomeStructure['neutralFeedback']
-    reward          = outcomeStructure['reward']
-    noReward        = outcomeStructure['noReward']
-    fractalClock    = stimuliStructure['fractalClock']
-    fractal1        = stimuliStructure['fractal1']
-    fractal2        = stimuliStructure['fractal2']
-    fixationCross   = stimuliStructure['fixationCross']
-    fixCrossTiming  = stimuliStructure['fixCrossTiming']
-    jitter          = stimuliStructure['jitter']
-    stimulusTiming  = stimuliStructure['stimulusTiming']
-    feedbackClock   = stimuliStructure['feedbackClock']
+    reward = outcomeStructure['reward']
+    noReward = outcomeStructure['noReward']
+    fractalClock = stimuliStructure['fractalClock']
+    fractal1 = stimuliStructure['fractal1']
+    fractal2 = stimuliStructure['fractal2']
+    fixationCross = stimuliStructure['fixationCross']
+    fixCrossTiming = stimuliStructure['fixCrossTiming']
+    jitter = stimuliStructure['jitter']
+    stimulusTiming = stimuliStructure['stimulusTiming']
+    feedbackClock = stimuliStructure['feedbackClock']
 
+    # Create variable for buttons of button box used in fMRI experiment
+    upButton = '3'
+    downButton = '1'
+    
     #------Prepare to start Routine "decision2"-------
-    t               = 0
+    t = 0
     fractalClock.reset() 
-    frameN          = -1
-    currentJitter   = random.uniform(0,jitter)
-    fixCrossTiming  = fixCrossTiming + currentJitter
+    frameN = -1
+    currentJitter = random.uniform(0,jitter)
+    fixCrossTiming = fixCrossTiming + currentJitter
     routineTimer.add(fixCrossTiming + stimulusTiming)
     
     # Compute position of fractals
+    pos = 3
     if redFractal == 'up':
-        fractal1.setPos([0,-4])
-        fractal2.setPos([0,4])
+        fractal1.setPos([0,-pos])
+        fractal2.setPos([0,pos])
     elif redFractal == 'down':
-        fractal1.setPos([0,4])
-        fractal2.setPos([0,-4])
+        fractal1.setPos([0,pos])
+        fractal2.setPos([0,-pos])
     
     # Get correct keys 
-    if whichVersion == 1:
+    if whichVersion == 1 or (whichVersion == 2 and session == 1):
         if redFractal == 'up':
-            redFractalKey   = 'up'
-            blueFractalKey  = 'down'
+            redFractalKey = 'up'
+            blueFractalKey = 'down'
         elif redFractal == 'down':
-            redFractalKey   = 'down'
-            blueFractalKey  = 'up'
+            redFractalKey = 'down'
+            blueFractalKey = 'up'
     elif whichVersion == 2:
         if redFractal == 'up':
-            redFractalKey = '4'
-            blueFractalKey = '2'
+            redFractalKey = upButton
+            blueFractalKey = downButton
         elif redFractal == 'down':
-            redFractalKey = '2'
-            blueFractalKey = '4'
+            redFractalKey = downButton
+            blueFractalKey = upButton
             
-    if whichVersion == 1:
-        corrAnsKey   = corrAns
+    if whichVersion == 1 or (whichVersion == 2 and session == 1):
+        corrAnsKey = corrAns
     elif whichVersion == 2:
         if corrAns == 'up':
-            corrAnsKey = '4'
+            corrAnsKey = upButton
         elif corrAns == 'down':
-            corrAnsKey = '2'
+            corrAnsKey = downButton
     
-    decision2 = event.BuilderKeyResponse()  # create an object of type KeyResponse
+    # Create an object of type KeyResponse
+    decision2 = event.BuilderKeyResponse()  
     decision2.status = NOT_STARTED
     
     # Keep track of which components have finished
@@ -114,15 +127,16 @@ trials, outcomes, feedbackText, misses, missCounter, myCount, routineTimer, glob
             thisComponent.status = NOT_STARTED
     
     #-------Start Routine "decision2"-------
-    decision2.timestamp = globalClock.getTime()
+    decision2.ts_start = globalClock.getTime()
+    triggered = False # indicate if fractal onset trigger has been recorded
     
     missIndex = 0
     continueRoutine = True
     while continueRoutine and routineTimer.getTime() > 0:
     
         # Get current time
-        t       = fractalClock.getTime()
-        frameN  = frameN + 1  # number of completed frames (so 0 is the first frame)
+        t = fractalClock.getTime()
+        frameN = frameN + 1  # number of completed frames (so 0 is the first frame)
         
         # *fixationCross* updates
         if t >= 0.0 and fixationCross.status == NOT_STARTED:
@@ -130,6 +144,9 @@ trials, outcomes, feedbackText, misses, missCounter, myCount, routineTimer, glob
             fixationCross.tStart = t  # underestimates by a little under one frame
             fixationCross.frameNStart = frameN  # exact frame index
             fixationCross.setAutoDraw(True)
+            if useEyeTracker:
+                # Send ET message
+                eyeTracker.sendMessage('FRACTALS PHASE ON')
         if fixationCross.status == STARTED and t >= (0.0 + (fixCrossTiming + stimulusTiming - win.monitorFramePeriod*0.75)): #most of one frame period left
             fixationCross.setAutoDraw(False)
         
@@ -139,6 +156,9 @@ trials, outcomes, feedbackText, misses, missCounter, myCount, routineTimer, glob
             fractal1.tStart = t  # underestimates by a little under one frame
             fractal1.frameNStart = frameN  # exact frame index
             fractal1.setAutoDraw(True)
+            if useEyeTracker:
+                # Send ET message
+                eyeTracker.sendMessage('FRACTALS ON')
         if fractal1.status == STARTED and t >= (fixCrossTiming + (stimulusTiming - win.monitorFramePeriod*0.75)): #most of one frame period left
             fractal1.setAutoDraw(False)
         
@@ -158,15 +178,15 @@ trials, outcomes, feedbackText, misses, missCounter, myCount, routineTimer, glob
             decision2.frameNStart = frameN  # exact frame index
             decision2.status = STARTED
             # keyboard checking is just starting
-            decision2.clock.reset()  # now t=0
+            decision2.clock.reset()
             event.clearEvents(eventType='keyboard')
         if decision2.status == STARTED and t >= (fixCrossTiming + (stimulusTiming - win.monitorFramePeriod*0.75)): #most of one frame period left
             decision2.status = STOPPED
         if decision2.status == STARTED:
-            if whichVersion == 1:
+            if whichVersion == 1 or (whichVersion == 2 and session == 1):
                 theseKeys = event.getKeys(keyList=['up', 'down'])
             elif whichVersion == 2:
-                theseKeys = event.getKeys(keyList=['4', '2'])
+                theseKeys = event.getKeys(keyList=[upButton, downButton])
             
             # Check for quit:
             if "escape" in theseKeys:
@@ -187,6 +207,10 @@ trials, outcomes, feedbackText, misses, missCounter, myCount, routineTimer, glob
                 else:
                     decision2.corr = 0
                     
+                # Todo: schauen, ob wir das brauchen
+                if useEyeTracker:
+                    eyeTracker.sendMessage("FRACTALS RESPONSE %s"%(decision2.keys))
+                    
             for thisComponent in decision2Components:
                 if hasattr(thisComponent, "status") and thisComponent.status != FINISHED:
                     continueRoutine = True
@@ -200,7 +224,20 @@ trials, outcomes, feedbackText, misses, missCounter, myCount, routineTimer, glob
         
         # Refresh the screen
         if continueRoutine:  # don't flip if this routine is over or we'll get a blank screen
+            
+            # Send  patch onset trigger
+            if t >= fixCrossTiming and triggered == False:
+                decision2.ts_fractal = globalClock.getTime() # send trigger
+                triggered = True # indicate that patch trigger has been recorded
+            
+            # Refresh the screen
             win.flip()
+        
+     # Stop eye tracking
+    if useEyeTracker:
+        
+        # Send a message to mark the end of trial
+        eyeTracker.sendMessage('FRACTALS PHASE OFF')
     
     #-------Ending Routine "decision2"-------
     for thisComponent in decision2Components:
@@ -251,10 +288,10 @@ trials, outcomes, feedbackText, misses, missCounter, myCount, routineTimer, glob
     trials.addData('decision2.corr', decision2.corr)
     trials.addData('decision2.color', decision2.color)
     trials.addData('decision2.reward', decision2.reward)
-    accPerf = trials.data['decision2.reward'].sum()
+    accPerf = accPerf + decision2.reward #trials.data['decision2.reward'].sum()
     trials.addData('decision2.accPerf', accPerf)
     
     # Give feedback
-    (routineTimer, globalClock, feedbackTimestamp, fixCrossTiming_feedback) = giveFeedback(experimentStructure, stimuliStructure, feedbackText, msg, routineTimer, globalClock, missIndex)
+    (routineTimer, globalClock, feedbackTimestamp, fixCrossTiming_feedback) = giveFeedback(experimentStructure, stimuliStructure, feedbackText, msg, routineTimer, globalClock, missIndex, eyeTracker)
     
-    return(decision2, trials, misses, missCounter, routineTimer, globalClock, decision2.timestamp, fixCrossTiming, feedbackTimestamp, fixCrossTiming_feedback, missIndex)
+    return(decision2, trials, misses, missCounter, accPerf, routineTimer, globalClock, decision2.ts_start, fixCrossTiming, feedbackTimestamp, fixCrossTiming_feedback, missIndex)

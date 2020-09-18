@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from psychopy import visual, core
 import inspect
 
@@ -47,16 +48,18 @@ def initializePatches(win, expInfo):
         patch2: object instance for second Gabor-patch
     """
     
+    # Todo: checken ob wir das so machen wollen! Momentan größe 10/2 und sf 0.4*2...
+    # mit scanner monitor testen!
     patchClock = core.Clock()
     ISI = core.StaticPeriod(win=win, screenHz=expInfo['frameRate'], name='ISI')
-    patch1 = visual.GratingStim(win=win, name='patch1',units='cm', 
+    patch1 = visual.GratingStim(win=win, name='patch1',units='deg', 
         tex='sin', mask='raisedCos',
-        ori=0, pos=[0,0], size=10, sf=0.4, phase=0.0,
+        ori=0, pos=[0,0], size=5, sf=0.8, phase=0.0,
         color=[1,1,1], colorSpace='rgb', opacity=1.0,
-        texRes=512, interpolate=True, depth=-1.0)
-    patch2 = visual.GratingStim(win=win, name='patch2',units='cm', 
+        texRes=512, interpolate=True, depth=-1.0) # size=5, sf=0.4
+    patch2 = visual.GratingStim(win=win, name='patch2',units='deg', 
         tex='sin', mask='raisedCos',
-        ori=0, pos=[0,0], size=10, sf=0.4, phase=0.0,
+        ori=0, pos=[0,0], size=5, sf=0.8, phase=0.0,
         color=[1,1,1], colorSpace='rgb', opacity=1.0,
         texRes=512, interpolate=True, depth=-2.0)
     return(patchClock, patch1, patch2) 
@@ -80,15 +83,15 @@ def initializeFractals(win, expInfo):
         pos=[0, 0], height=0.1, wrapWidth=None,
         color='white', colorSpace='rgb', opacity=1,
         depth=0.0)
-    fractal1 = visual.ImageStim(win=win, name='fractal11',units='cm', 
+    fractal1 = visual.ImageStim(win=win, name='fractal11',units='deg', 
         image='blueFractal.jpg', mask=None,
-        ori=0, pos=[0,0], size=[9.6, 6],
+        ori=0, pos=[0,0], size=[6, 4],
         color=[1,1,1], colorSpace='rgb', opacity=1,
         flipHoriz=False, flipVert=False,
-        texRes=128, interpolate=True, depth=-1.0)
-    fractal2 = visual.ImageStim(win=win, name='fractal22',units='cm', 
+        texRes=128, interpolate=True, depth=-1.0) #9.6, 6
+    fractal2 = visual.ImageStim(win=win, name='fractal22',units='deg', 
         image='redFractal.jpg', mask=None,
-        ori=0, pos=[0,0], size=[9.6, 6],
+        ori=0, pos=[0,0], size=[6, 4],
         color=[1,1,1], colorSpace='rgb', opacity=1,
         flipHoriz=False, flipVert=False,
         texRes=128, interpolate=True, depth=-2.0)
@@ -162,16 +165,16 @@ def initializePatchesExample(win, exampleText, positionPatch1, positionPatch2):
     patchExampleClock = core.Clock()
     examplePatch1 = visual.GratingStim(win=win, name='examplePatch1',units='cm',
         tex=u'sin', mask=u'raisedCos',
-        ori=0, pos=positionPatch1, size=10, sf=0.4, phase=0.0,
+        ori=0, pos=positionPatch1, size=5, sf=0.8, phase=0.0,  # size=10, sf=0.4
         color=[1,1,1], colorSpace='rgb', opacity=0.7,
         texRes=512, interpolate=True, depth=-1.0)
     examplePatch2 = visual.GratingStim(win=win, name='examplePatch2',units='cm',
         tex=u'sin', mask=u'raisedCos',
-        ori=0, pos=positionPatch2, size=10, sf=0.4, phase=0.0,
+        ori=0, pos=positionPatch2, size=5, sf=0.8, phase=0.0,
         color=[1,1,1], colorSpace='rgb', opacity=0.5,
         texRes=512, interpolate=True, depth=-1.0)
     exampleText = visual.TextStim(win=win, ori=0, name='mainText',
-        text=exampleText,font=u'Arial', pos=[0, 0.6], height=0.08,
+        text=exampleText,font=u'Arial', pos=[0, 0.6], height=0.06,
         wrapWidth=1.5, color=u'white', colorSpace='rgb', opacity=1,
         depth=-4.0, units = "norm")
     return(patchExampleClock, examplePatch1, examplePatch2, exampleText)
@@ -198,19 +201,19 @@ def initializeFractalsExample(win, fractalText):
         depth=0.0)
     exampleFractal1 = visual.ImageStim(win=win, name='fractal11',units='cm', 
         image='blueFractal.jpg', mask=None,
-        ori=0, pos=[0,0], size=[9.6, 6],
+        ori=0, pos=[0,0], size=[6, 4],
         color=[1,1,1], colorSpace='rgb', opacity=1,
         flipHoriz=False, flipVert=False,
         texRes=128, interpolate=True, depth=-1.0)
     exampleFractal2 = visual.ImageStim(win=win, name='fractal22',units='cm', 
         image='redFractal.jpg', mask=None,
-        ori=0, pos=[0,0], size=[9.6, 6],
+        ori=0, pos=[0,0], size=[6, 4],
         color=[1,1,1], colorSpace='rgb', opacity=1,
         flipHoriz=False, flipVert=False,
         texRes=128, interpolate=True, depth=-2.0)
     exampleText = visual.TextStim(win=win, ori=0, name='text',
         text=fractalText, font=u'Arial',
-        pos=[0, 0.8], height=0.08, wrapWidth=1.5,
+        pos=[0, 0.8], height=0.06, wrapWidth=1.5,
         color=u'white', colorSpace='rgb', opacity=1,
         depth=-4.0, units = "norm")
     return(fractalExampleClock, exampleFractal1, exampleFractal2, exampleText) 

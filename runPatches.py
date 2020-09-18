@@ -6,7 +6,7 @@ from psychopy import core
 from giveFeedback import giveFeedback
 
 def runPatches(experimentStructure, stimuliStructure, data, feedbackText, patchClock, whichLoop,
-conditionName, showFeedback, nTrialsPatches, blockIndex, globalClock, tracker):
+conditionName, showFeedback, nTrialsPatches, blockIndex, globalClock, eyeTracker=0):
     """ This function manages the first stage of the Gabor-bandit task (Gabor-patches)
     
     Input:
@@ -21,7 +21,7 @@ conditionName, showFeedback, nTrialsPatches, blockIndex, globalClock, tracker):
         nTrialsPatches: number of trials
         blockIndex: indicates current block number
         globalClock: clock to control timing during fMRI
-        tracker: eye-tracker object instance
+        eyeTracker: eye-tracker object instance
         
     Return:
         accPerf: accumulated performance of current block
@@ -31,9 +31,10 @@ conditionName, showFeedback, nTrialsPatches, blockIndex, globalClock, tracker):
     expInfo = experimentStructure['expInfo']
     thisExp = experimentStructure['thisExp']
     
-    trialIndexes = 0 # store indexed trials for summary
+    # Store indexed trials for summary
+    trialIndexes = 0 
     
-    # Set up handler to look after randomisation of conditions etc
+    # Set up handler to look after randomisation of conditions etc.
     trials = data.TrialHandler(nReps=1, method='sequential', 
         extraInfo=expInfo, originPath=None,
         trialList=data.importConditions(blockIndex),
@@ -60,7 +61,7 @@ conditionName, showFeedback, nTrialsPatches, blockIndex, globalClock, tracker):
             
         # First stage of the task
         (decision1, trials, routineTimer, globalClock, decision1.timestamp, fixCrossTiming, saccadeMiss) = createPatches(experimentStructure, stimuliStructure, patchClock, targetPatch,
-        trials, whichLoop, thisDifference, PU,routineTimer, globalClock, tracker)
+        trials, whichLoop, thisDifference, PU,routineTimer, globalClock, eyeTracker)
         
         # Check if response was made
         if (decision1.keys==None):

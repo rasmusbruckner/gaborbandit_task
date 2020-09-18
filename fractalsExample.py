@@ -34,11 +34,11 @@ def fractalsExample(experimentStructure, exampleText, corrAns):
     darkBandit = 'left'
     corrAnsLeft = 'up'
     if redFractal == 'up':
-        fractal1.setPos([0,-4])
-        fractal2.setPos([0,4])
+        fractal1.setPos([0,-3])
+        fractal2.setPos([0,3])
     elif redFractal == 'down':
-        fractal1.setPos([0,4])
-        fractal2.setPos([0,-4])
+        fractal1.setPos([0,3])
+        fractal2.setPos([0,-3])
         
     if darkBandit == 'left':
         corrAnsF = corrAnsLeft
